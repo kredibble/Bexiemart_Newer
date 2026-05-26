@@ -25,6 +25,12 @@ export default function ProductDetailsScreen() {
 
   const flatListRef = useRef<FlatList>(null);
 
+  const onImageScroll = useCallback(({ viewableItems }: any) => {
+    if (viewableItems.length > 0) {
+      setActiveImageIndex(viewableItems[0].index ?? 0);
+    }
+  }, []);
+
   if (isLoading) {
     return (
       <View className="flex-1 bg-background items-center justify-center">
@@ -39,12 +45,6 @@ export default function ProductDetailsScreen() {
       </View>
     );
   }
-
-  const onImageScroll = useCallback(({ viewableItems }: any) => {
-    if (viewableItems.length > 0) {
-      setActiveImageIndex(viewableItems[0].index ?? 0);
-    }
-  }, []);
 
   const handleAddToCart = () => {
     if (!product) return;

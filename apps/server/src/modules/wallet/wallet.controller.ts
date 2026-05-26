@@ -1,10 +1,11 @@
-import { Controller, Get, Post, Body, Param, Query, UseGuards, Req } from "@nestjs/common";
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Req } from "@nestjs/common";
 import { AuthGuard } from "../../guards/auth.guard";
 import { WalletService } from "./wallet.service";
 import { TopupDto } from "./dto/topup.dto";
 import { TransferDto } from "./dto/transfer.dto";
 import { PinDto } from "./dto/pin.dto";
 import { ChangePinDto } from "./dto/change-pin.dto";
+import { CreateCardDto, UpdateCardDto } from "./dto/card.dto";
 import { ApiTags, ApiOperation, ApiBody } from "@nestjs/swagger";
 
 @ApiTags("Wallet")
@@ -78,5 +79,35 @@ export class WalletController {
   getPinStatus(@Req() req: any) {
     return this.walletService.getPinStatus(req.user.id);
   }
-}
+  @Get("cards")
+  @ApiOperation({ summary: "Get wallet cards" })
+  getCards(@Req() req: any) {
+    return this.walletService.getCards(req.user.id);
+  }
 
+  @Post("cards")
+  @ApiOperation({ summary: "Add a card to wallet" })
+  @ApiBody({ type: CreateCardDto })
+  addCard(@Req() req: any, @Body() body: CreateCardDto) {
+    return this.walletService.addCard(req.user.id, body);
+  }
+
+  @Put("cards/:id")
+  @ApiOperation({ summary: "Update a card in wallet" })
+  @ApiBody({ type: UpdateCardDto })
+  updateCard(@Req() req: any, @Param("id") id: string, @Body() body: UpdateCardDto) {
+    return this.walletService.updateCard(req.user.id, id, body);
+  }
+
+  @Delete("cards/:id")
+  @ApiOperation({ summary: "Delete a card from wallet" })
+  deleteCard(@Req() req: any, @Param("id") id: string) {
+    return this.walletService.deleteCard(req.user.id, id);
+  }
+
+  @Post("cards/:id/default")
+  @ApiOperation({ summary: "Set a card as default" })
+  setDefaultCard(@Req() req: any, @Param("id") id: string) {
+    return this.walletService.setDefaultCard(req.user.id, id);
+  }
+}

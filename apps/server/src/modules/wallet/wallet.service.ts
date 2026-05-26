@@ -204,4 +204,92 @@ export class WalletService {
       failuresRemaining: Math.max(0, 5 - wallet.pinFailures),
     };
   }
+  async getCards(userId: string) {
+    const wallet = await this.getWallet(userId);
+    return this.prisma.card.findMany({
+      where: { walletId: wallet.id },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  async addCard(userId: string, data: any) {
+    const wallet = await this.getWallet(userId);
+    
+    const existingCount = await this.prisma.card.count({ where: { walletId: wallet.id } });
+    const isDefault = existingCount === 0 ? true : !!data.isDefault;
+
+    if (isDefault && existingCount > 0) {
+      await this.prisma.card.updateMany({
+        where: { walletId: wallet.id },
+        data: { isDefault: false },
+      });
+    }
+
+    return this.prisma.card.create({
+      data: {
+        walletId: wallet.id,
+        type: data.type,
+        cardholderName: data.cardholderName,
+        last4: data.last4,
+        expiryMonth: data.expiryMonth,
+        expiryYear: data.expiryYear,
+        isDefault,
+      },
+    });
+  }
+
+  async updateCard(userId: string, cardId: string, data: any) {
+    const wallet = await this.getWallet(userId);
+    
+    const card = await this.prisma.card.findUnique({ where: { id: cardId } });
+    if (!card || card.walletId !== wallet.id) {
+      throw new NotFoundException("Card not found");
+    }
+
+    if (data.isDefault) {
+      await this.prisma.card.updateMany({
+        where: { walletId: wallet.id },
+        data: { isDefault: false },
+      });
+    }
+
+    return this.prisma.card.update({
+      where: { id: cardId },
+      data,
+    });
+  }
+
+  async deleteCard(userId: string, cardId: string) {
+    const wallet = await this.getWallet(userId);
+    
+    const card = await this.prisma.card.findUnique({ where: { id: cardId } });
+    if (!card || card.walletId !== wallet.id) {
+      throw new NotFoundException("Card not found");
+    }
+
+    await this.prisma.card.delete({ where: { id: cardId } });
+    return { success: true };
+  }
+
+  async setDefaultCard(userId: string, cardId: string) {
+    const wallet = await this.getWallet(userId);
+    
+    const card = await this.prisma.card.findUnique({ where: { id: cardId } });
+    if (!card || card.walletId !== wallet.id) {
+      throw new NotFoundException("Card not found");
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.card.updateMany({
+        where: { walletId: wallet.id },
+        data: { isDefault: false },
+      }),
+      this.prisma.card.update({
+        where: { id: cardId },
+        data: { isDefault: true },
+      })
+    ]);
+
+    return { success: true };
+  }
 }

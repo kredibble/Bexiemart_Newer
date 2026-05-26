@@ -11,6 +11,36 @@ export function getTransactionIcon(type: TransactionType | string): string {
   }
 }
 
+const PREMIUM_GRADIENTS = [
+  ["#1a202c", "#2d3748"], // Midnight Navy
+  ["#b91c1c", "#f87171"], // Crimson Red
+  ["#075985", "#38bdf8"], // Ocean Blue
+  ["#4f2ae8", "#3013a5"], // Deep Purple
+  ["#064e3b", "#34d399"], // Emerald Green
+  ["#78350f", "#fbbf24"], // Amber Gold
+  ["#831843", "#f472b6"], // Rose Pink
+  ["#374151", "#9ca3af"], // Slate Gray
+] as const;
+
+export function getCardColors(id?: string, type?: string): readonly [string, string, ...string[]] {
+  if (!id) {
+    // Fallback for Add Screen preview where ID doesn't exist yet
+    const t = type?.toLowerCase() || "";
+    if (t.includes("visa")) return PREMIUM_GRADIENTS[0];
+    if (t.includes("master")) return PREMIUM_GRADIENTS[1];
+    if (t.includes("amex")) return PREMIUM_GRADIENTS[2];
+    return PREMIUM_GRADIENTS[3];
+  }
+
+  // Hash the ID to consistently pick the same unique color for a given card
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = id.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % PREMIUM_GRADIENTS.length;
+  return PREMIUM_GRADIENTS[index];
+}
+
 export function getTransactionColors(type: TransactionType | string) {
   switch (type) {
     case "DEPOSIT": case "TRANSFER_RECEIVED":

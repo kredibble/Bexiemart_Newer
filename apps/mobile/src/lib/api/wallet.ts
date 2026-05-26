@@ -11,4 +11,9 @@ export const walletApi = {
   verifyPin: (pin: string) => apiClient.post("/wallet/pin/verify", { pin }),
   resetPinFailures: () => apiClient.post("/wallet/pin/reset"),
   getPinStatus: () => apiClient.get("/wallet/pin/status"),
+  getCards: () => apiClient.get("/wallet/cards"),
+  addCard: (data: any) => apiClient.post("/wallet/cards", data),
+  updateCard: (id: string, data: any) => apiClient.put(`/wallet/cards/${id}`, data),
+  deleteCard: (id: string) => apiClient.delete(`/wallet/cards/${id}`),
+  setDefaultCard: (id: string) => apiClient.post(`/wallet/cards/${id}/default`),
 };

@@ -596,6 +596,7 @@ model Wallet {
   transactions  Transaction[]
   bankAccounts  BankAccount[]
   momoAccounts  MomoAccount[]
+  cards         Card[]
   escrowBuyer   Escrow[]      @relation("EscrowBuyer")
   escrowVendor  Escrow[]      @relation("EscrowVendor")
 }
@@ -651,6 +652,22 @@ model MomoAccount {
   createdAt   DateTime     @default(now())
 
   @@unique([walletId, phoneNumber])
+}
+
+model Card {
+  id              String   @id @default(uuid())
+  walletId        String
+  wallet          Wallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  type            String   // e.g. Visa, MasterCard
+  cardholderName  String
+  last4           String
+  expiryMonth     String
+  expiryYear      String
+  isDefault       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([walletId, last4, type])
 }
 
 // ─── Escrow Model ──────────────────────────────────────────────────────────────

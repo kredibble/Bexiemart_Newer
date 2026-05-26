@@ -5,6 +5,7 @@ export const WALLET_KEYS = {
   wallet: ["wallet"] as const,
   transactions: (page?: number) => ["transactions", page] as const,
   pinStatus: ["wallet", "pin", "status"] as const,
+  cards: ["wallet", "cards"] as const,
 };
 
 export function useWallet() {
@@ -84,5 +85,44 @@ export function useResetPinFailures() {
   return useMutation({
     mutationFn: () => walletApi.resetPinFailures().then((r) => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: WALLET_KEYS.pinStatus }),
+  });
+}
+
+export function useCards() {
+  return useQuery({
+    queryKey: WALLET_KEYS.cards,
+    queryFn: () => walletApi.getCards().then((r) => r.data),
+  });
+}
+
+export function useAddCard() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: any) => walletApi.addCard(data).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: WALLET_KEYS.cards }),
+  });
+}
+
+export function useUpdateCard() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => walletApi.updateCard(id, data).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: WALLET_KEYS.cards }),
+  });
+}
+
+export function useDeleteCard() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => walletApi.deleteCard(id).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: WALLET_KEYS.cards }),
+  });
+}
+
+export function useSetDefaultCard() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => walletApi.setDefaultCard(id).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: WALLET_KEYS.cards }),
   });
 }
