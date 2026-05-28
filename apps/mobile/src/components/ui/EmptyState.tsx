@@ -1,57 +1,51 @@
-import { View, Text } from "react-native";
-import { Icon } from "@/components/ui/Icon";
-import { Button } from "@/components/ui/Button";
+import React from "react";
+import { View, Text, Pressable } from "react-native";
+import { Icon } from "./Icon";
 
 interface EmptyStateProps {
-  icon: string | React.ReactNode;
   title: string;
   description: string;
+  icon?: string;
+  iconName?: string;
   actionLabel?: string;
   onAction?: () => void;
-  className?: string;
-  // deprecated props kept for backwards compatibility during migration
-  iconColor?: string;
-  iconBgColor?: string;
+  fullScreen?: boolean;
 }
 
-export function EmptyState({ 
-  icon, 
-  title, 
-  description, 
-  actionLabel, 
+export function EmptyState({
+  title,
+  description,
+  icon,
+  iconName,
+  actionLabel,
   onAction,
-  className = ""
+  fullScreen = true,
 }: EmptyStateProps) {
-  const isEmoji = typeof icon === 'string' && /(\p{Emoji_Presentation}|\p{Extended_Pictographic})/u.test(icon);
-  const isString = typeof icon === 'string';
-
+  const finalIcon = icon || iconName || "inbox";
   return (
-    <View className={`items-center justify-center py-20 px-8 ${className}`}>
-      <View className="w-16 h-16 rounded-full bg-muted items-center justify-center mb-4">
-        {isEmoji ? (
-          <Text className="text-[24px]">{icon}</Text>
-        ) : isString ? (
-          <Icon name={icon as any} size={24} color="#64748b" />
-        ) : (
-          icon
-        )}
+    <View className={`items-center justify-center ${fullScreen ? "flex-1 bg-background" : "p-8 py-12"}`}>
+      <View className="h-24 w-24 rounded-full bg-primary/10 items-center justify-center mb-6">
+        <Icon name={finalIcon as any} size={40} color="#004CFF" />
       </View>
-      <Text className="text-[16px] font-bold text-foreground text-center">
+      
+      <Text className="text-2xl font-bold text-foreground mb-3 text-center">
         {title}
       </Text>
-      <Text className="text-[14px] text-muted-foreground mt-1 text-center max-w-[280px]">
+      
+      <Text className="text-muted-foreground text-center mb-8 max-w-[80%] text-base leading-relaxed">
         {description}
       </Text>
-      {actionLabel && onAction ? (
-        <View className="mt-6">
-          <Button 
-            title={actionLabel} 
-            size="md" 
-            onPress={onAction}
-            className="rounded-full px-8"
-          />
-        </View>
-      ) : null}
+
+      {actionLabel && onAction && (
+        <Pressable
+          onPress={onAction}
+          className="bg-primary px-8 py-4 rounded-full active:opacity-80 min-w-[200px] items-center"
+        >
+          <Text className="text-primary-foreground font-semibold text-base">
+            {actionLabel}
+          </Text>
+        </Pressable>
+      )}
     </View>
   );
 }

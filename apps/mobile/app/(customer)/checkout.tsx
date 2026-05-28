@@ -16,6 +16,14 @@ import type { Href } from "expo-router";
 type DeliveryMethod = "standard" | "express";
 type PaymentMethod = "card" | "momo" | "wallet";
 
+interface CartItemData {
+  productId: string;
+  name: string;
+  price: number;
+  quantity: number;
+  imageUrl?: string;
+}
+
 export default function CheckoutScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -35,7 +43,7 @@ export default function CheckoutScreen() {
   const { balance, bexieCoins } = useWalletStore();
 
   const items = cart?.items ?? [];
-  const subtotal = items.reduce((sum: number, i: any) => sum + i.price * i.quantity, 0);
+  const subtotal = items.reduce((sum: number, i: CartItemData) => sum + i.price * i.quantity, 0);
   const deliveryFee = deliveryMethod === "express" ? 12.00 : 5.00;
   const discount = useBexieCoins ? 10.00 : 0;
   const total = Math.max(0, subtotal + deliveryFee - discount);
@@ -86,7 +94,7 @@ export default function CheckoutScreen() {
         },
         paymentMethod,
         useBexieCoins,
-        items: items.map((i: any) => ({ productId: i.productId, quantity: i.quantity })),
+        items: items.map((i: CartItemData) => ({ productId: i.productId, quantity: i.quantity })),
       } as any),
       deliveryMethod,
     }, {
@@ -101,8 +109,8 @@ export default function CheckoutScreen() {
           }
         });
       },
-      onError: (err) => {
-        Toast.show({ type: "error", text1: "Order Failed", text2: (err as any)?.message ?? "Something went wrong." });
+      onError: (err: any) => {
+        Toast.show({ type: "error", text1: "Order Failed", text2: err?.message ?? "Something went wrong." });
       },
     });
   };
@@ -291,7 +299,7 @@ export default function CheckoutScreen() {
         </Text>
 
         <View className="bg-card rounded-[24px] p-5 border border-border">
-          {items.map((item: any) => (
+          {items.map((item: CartItemData) => (
             <View key={item.productId} className="flex-row justify-between py-2.5 border-b border-border last:border-b-0">
               <View className="flex-1 mr-3">
                 <Text className="text-body-sm font-semibold text-foreground font-body" numberOfLines={1}>

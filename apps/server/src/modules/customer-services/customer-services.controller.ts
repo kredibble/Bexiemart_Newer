@@ -12,8 +12,13 @@ export class CustomerServicesController {
 
   @Get()
   @ApiOperation({ summary: "List all services, optionally filtered by category or search" })
-  findAll(@Query("category") category?: string, @Query("search") search?: string) {
-    return this.service.findAll(category, search);
+  findAll(
+    @Query("category") category?: string, 
+    @Query("search") search?: string,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string
+  ) {
+    return this.service.findAll(category, search, Number(page) || 1, Number(limit) || 20);
   }
 
   @Get(":id")
@@ -31,8 +36,8 @@ export class CustomerServicesController {
 
   @Get("bookings")
   @ApiOperation({ summary: "List current user's bookings" })
-  findMyBookings(@Req() req: any) {
-    return this.service.findMyBookings(req.user.id);
+  findMyBookings(@Req() req: any, @Query("page") page?: string, @Query("limit") limit?: string) {
+    return this.service.findMyBookings(req.user.id, Number(page) || 1, Number(limit) || 20);
   }
 
   @Delete("bookings/:id")

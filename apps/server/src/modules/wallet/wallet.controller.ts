@@ -5,9 +5,11 @@ import { TopupDto } from "./dto/topup.dto";
 import { TransferDto } from "./dto/transfer.dto";
 import { PinDto } from "./dto/pin.dto";
 import { ChangePinDto } from "./dto/change-pin.dto";
-import { CreateCardDto, UpdateCardDto } from "./dto/card.dto";
+import { CreateCardDto, UpdateCardDto, VerifyCardDto } from "./dto/card.dto";
 import { LinkBankAccountDto, LinkMomoAccountDto } from "./dto/linked-accounts.dto";
+import { WithdrawDto } from "./dto/withdraw.dto";
 import { ApiTags, ApiOperation, ApiBody } from "@nestjs/swagger";
+import { Throttle } from "@nestjs/throttler";
 
 @ApiTags("Wallet")
 @Controller("wallet")
@@ -41,18 +43,19 @@ export class WalletController {
   }
 
   @Post("withdraw")
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({ summary: "Withdraw funds to a bank or momo account" })
-  @ApiBody({ type: require('./dto/withdraw.dto').WithdrawDto }) // Dynamic require to avoid import clutter if not needed, but let's just add it correctly. Wait, I will just use the inline type since I can't add imports easily without another replace. I will import it.
-  withdraw(@Req() req: any, @Body() body: any) {
-    return this.walletService.withdraw(req.user.id, body.amount, body.accountId, body.accountType);
+  @ApiBody({ type: WithdrawDto })
+  withdraw(@Req() req: any, @Body() body: WithdrawDto) {
+    return this.walletService.withdraw(req.user.id, body.amount, body.accountId, body.accountType, body.pin);
   }
 
   @Post("transfer")
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({ summary: "Transfer funds to another user" })
   @ApiBody({ type: TransferDto })
   transfer(@Req() req: any, @Body() body: TransferDto) {
-    // In a real app we'd verify the pin here before transferring
-    return this.walletService.transfer(req.user.id, body.recipientEmail, body.amount);
+    return this.walletService.transfer(req.user.id, body.recipientEmail, body.amount, body.pin);
   }
 
   @Post("pin")
@@ -170,7 +173,8 @@ export class WalletController {
 
   @Post("cards/verify")
   @ApiOperation({ summary: "Verify a Paystack transaction and save the card token" })
-  verifyAndSaveCard(@Req() req: any, @Body() body: { reference: string; cardholderName: string; isDefault?: boolean }) {
+  @ApiBody({ type: VerifyCardDto })
+  verifyAndSaveCard(@Req() req: any, @Body() body: VerifyCardDto) {
     return this.walletService.verifyAndSaveCard(req.user.id, body.reference, body.cardholderName, body.isDefault);
   }
 }

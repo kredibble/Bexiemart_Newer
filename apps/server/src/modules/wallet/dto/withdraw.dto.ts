@@ -15,4 +15,9 @@ export class WithdrawDto {
   @ApiProperty({ example: "bank", description: "The type of account", enum: ["bank", "momo"] })
   @IsIn(["bank", "momo"])
   accountType: "bank" | "momo";
+
+  @ApiProperty({ example: "1234", description: "4-digit wallet PIN" })
+  @IsString()
+  @IsNotEmpty()
+  pin: string;
 }

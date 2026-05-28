@@ -61,20 +61,30 @@ export class DispatcherService {
     });
   }
 
-  async getAvailableTasks(userId: string) {
+  async getAvailableTasks(userId: string, page: number = 1, limit: number = 20) {
     await this.getProfile(userId);
     
     // In a real app, we would filter by distance using PostGIS or Harvesine formula
     // For now, we return all pending ride requests
-    const pendingRides = await this.prisma.rideRequest.findMany({
-      where: { status: "PENDING" },
-      include: { customer: { select: { id: true, name: true, image: true } } },
-      orderBy: { createdAt: "desc" },
-    });
+    const skip = (page - 1) * limit;
+
+    const [rides, total] = await Promise.all([
+      this.prisma.rideRequest.findMany({
+        where: { status: "PENDING" },
+        skip,
+        take: limit,
+        include: { customer: { select: { id: true, name: true, image: true } } },
+        orderBy: { createdAt: "desc" },
+      }),
+      this.prisma.rideRequest.count({ where: { status: "PENDING" } })
+    ]);
 
     return {
-      rides: pendingRides,
-      deliveries: [] // Future: Implement order delivery fetching
+      data: { rides, deliveries: [] },
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
     };
   }
 
@@ -159,7 +169,7 @@ export class DispatcherService {
     throw new BadRequestException("Unsupported task type");
   }
 
-  async getMyTasks(userId: string, status: "active" | "completed") {
+  async getMyTasks(userId: string, status: "active" | "completed", page: number = 1, limit: number = 20) {
     const profile = await this.getProfile(userId);
     
     let statuses: string[];
@@ -169,16 +179,34 @@ export class DispatcherService {
       statuses = ["COMPLETED", "CANCELLED"];
     }
 
-    const rides = await this.prisma.rideRequest.findMany({
-      where: {
-        dispatcherId: profile.id,
-        status: { in: statuses }
-      },
-      include: { customer: { select: { id: true, name: true, image: true } } },
-      orderBy: { createdAt: "desc" },
-    });
+    const skip = (page - 1) * limit;
 
-    return { rides, deliveries: [] };
+    const [rides, total] = await Promise.all([
+      this.prisma.rideRequest.findMany({
+        where: {
+          dispatcherId: profile.id,
+          status: { in: statuses }
+        },
+        skip,
+        take: limit,
+        include: { customer: { select: { id: true, name: true, image: true } } },
+        orderBy: { createdAt: "desc" },
+      }),
+      this.prisma.rideRequest.count({
+        where: {
+          dispatcherId: profile.id,
+          status: { in: statuses }
+        }
+      })
+    ]);
+
+    return {
+      data: { rides, deliveries: [] },
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    };
   }
 
   // --- Earnings & Wallet ---

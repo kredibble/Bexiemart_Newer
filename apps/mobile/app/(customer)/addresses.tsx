@@ -5,13 +5,16 @@ import Toast from "@/lib/toast-polyfill";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon } from "@/components/ui/Icon";
+import { LoadingState } from "@/components/ui/LoadingState";
+import { ErrorState } from "@/components/ui/ErrorState";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useAddresses, useCreateAddress, useUpdateAddress, useDeleteAddress, useSetDefaultAddress } from "@/lib/hooks/use-addresses";
 import type { Address } from "@/lib/stores/address-store";
 
 export default function AddressesScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { data: addressesData, isLoading } = useAddresses();
+  const { data: addressesData, isPending, isError, refetch } = useAddresses();
   const addresses = addressesData ?? [];
   const createAddress = useCreateAddress();
   const updateAddress = useUpdateAddress();
@@ -93,6 +96,14 @@ export default function AddressesScreen() {
     });
   };
 
+  if (isPending) {
+    return <LoadingState message="Loading your addresses..." />;
+  }
+
+  if (isError) {
+    return <ErrorState message="Failed to load your addresses." onRetry={refetch} />;
+  }
+
   return (
     <View className="flex-1 bg-background">
       {/* Header */}
@@ -159,8 +170,13 @@ export default function AddressesScreen() {
             </Pressable>
           ))}
           {addresses.length === 0 && (
-            <View className="py-10 items-center">
-              <Text className="text-muted-foreground font-body">No addresses found. Add one above.</Text>
+            <View className="py-10">
+              <EmptyState 
+                title="No addresses found" 
+                description="Add your delivery address to proceed with checkout." 
+                iconName="map-pin"
+                fullScreen={false}
+              />
             </View>
           )}
         </View>

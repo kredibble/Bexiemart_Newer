@@ -131,7 +131,7 @@ export default function ListingsScreen() {
       ) : filteredItems.length === 0 ? (
         <View className="flex-1 justify-center px-5">
           <EmptyState
-            icon={activeTab === "products" ? "package" : activeTab === "food" ? "coffee" : "briefcase"}
+            iconName={activeTab === "products" ? "package" : activeTab === "food" ? "coffee" : "briefcase"}
             title={`No ${activeTab} found`}
             description={filter === "all" ? `You haven't added any ${activeTab} yet.` : `You have no ${filter.replace("_", " ")} ${activeTab}.`}
             actionLabel={`Add ${activeTab === "products" ? "Product" : activeTab === "food" ? "Food Item" : "Service"}`}

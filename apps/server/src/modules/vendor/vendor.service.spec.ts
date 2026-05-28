@@ -201,11 +201,11 @@ describe("VendorService", () => {
       ];
       prisma.orderItem.findMany.mockResolvedValue(orderItems);
 
-      const result = await service.getOrders("u1");
-      expect(result).toHaveLength(1);
-      expect(result[0].items).toHaveLength(2);
-      expect(result[0].items[0].productName).toBe("Product 1");
-      expect(result[0].items[1].productName).toBe("Product 2");
+      const result = await service.getOrders("u1", 1, 10);
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0]!.items).toHaveLength(2);
+      expect(result.data[0]!.items[0].productName).toBe("Product 1");
+      expect(result.data[0]!.items[1].productName).toBe("Product 2");
     });
   });
 

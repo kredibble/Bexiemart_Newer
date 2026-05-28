@@ -6,6 +6,9 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon } from "@/components/ui/Icon";
 import { Button } from "@/components/ui/Button";
+import { LoadingState } from "@/components/ui/LoadingState";
+import { ErrorState } from "@/components/ui/ErrorState";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useProducts } from "@/lib/hooks/use-products";
 
 const RECENT_SEARCHES = ["Wireless Earbuds", "Sneakers size 42", "Hoodie navy", "Gaming Mouse"];
@@ -18,8 +21,20 @@ export default function SearchScreen() {
   const [showFilters, setShowFilters] = useState(false);
   const [recentSearches, setRecentSearches] = useState(RECENT_SEARCHES);
   const [activeSort, setActiveSort] = useState(0);
-  const { data: productsData, isLoading } = useProducts({ search: query || undefined });
+  const { data: productsData, isPending, isError, refetch } = useProducts({ search: query || undefined });
   const results = productsData?.data ?? [];
+
+  if (isError) {
+    return (
+      <View className="flex-1 bg-card">
+        <View className="px-5 pb-4 pt-16 flex-row gap-3 items-center">
+          <BackButton />
+          <Text className="text-[20px] font-heading font-black text-foreground">Search</Text>
+        </View>
+        <ErrorState message="Failed to load search results." onRetry={refetch} />
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-card">
@@ -91,12 +106,21 @@ export default function SearchScreen() {
         ) : (
           <View className="p-5">
             <Text className="text-[14px] font-bold text-muted-foreground font-heading mb-4 px-1">
-              {isLoading ? "Searching..." : `${results.length} Results for "${query}"`}
+              {isPending ? "Searching..." : `${results.length} Results for "${query}"`}
             </Text>
             
-            {isLoading && results.length === 0 ? (
-              <View className="py-10 items-center">
-                <ActivityIndicator color="#004CFF" />
+            {isPending && results.length === 0 ? (
+              <View className="py-10">
+                <LoadingState message="Finding the best products for you..." />
+              </View>
+            ) : results.length === 0 ? (
+              <View className="py-10">
+                <EmptyState 
+                  title="No results found" 
+                  description={`We couldn't find any products matching "${query}".`}
+                  iconName="search"
+                  fullScreen={false}
+                />
               </View>
             ) : (
             <View className="gap-4">

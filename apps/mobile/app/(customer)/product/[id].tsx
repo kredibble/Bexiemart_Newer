@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/Button";
 import { useProduct } from "@/lib/hooks/use-products";
 import { useAddToCart } from "@/lib/hooks/use-cart";
 import { Icon } from "@/components/ui/Icon";
+import { LoadingState } from "@/components/ui/LoadingState";
+import { ErrorState } from "@/components/ui/ErrorState";
+import { EmptyState } from "@/components/ui/EmptyState";
 import Toast from "@/lib/toast-polyfill";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -15,7 +18,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
 export default function ProductDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { data: product, isLoading } = useProduct(id);
+  const { data: product, isPending, isError, refetch } = useProduct(id);
   const addToCartMutation = useAddToCart();
 
   const [quantity, setQuantity] = useState(1);
@@ -26,23 +29,31 @@ export default function ProductDetailsScreen() {
 
   const flatListRef = useRef<FlatList>(null);
 
-  const onImageScroll = useCallback(({ viewableItems }: any) => {
+  const onImageScroll = useCallback(({ viewableItems }: { viewableItems: Array<{ index: number | null }> }) => {
     if (viewableItems.length > 0) {
       setActiveImageIndex(viewableItems[0].index ?? 0);
     }
   }, []);
 
-  if (isLoading) {
-    return (
-      <View className="flex-1 bg-background items-center justify-center">
-        <ActivityIndicator size="large" color="#004CFF" />
-      </View>
-    );
+  if (isPending) {
+    return <LoadingState message="Loading product details..." />;
   }
+  
+  if (isError) {
+    return <ErrorState message="Failed to load product details." onRetry={refetch} />;
+  }
+  
   if (!product) {
     return (
-      <View className="flex-1 bg-background items-center justify-center px-5">
-        <Text className="text-body-md text-muted-foreground font-body text-center">Product not found</Text>
+      <View className="flex-1 bg-background pt-12">
+        <View className="px-5 pb-4">
+          <BackButton />
+        </View>
+        <EmptyState 
+          title="Product Not Found" 
+          description="The product you are looking for does not exist or has been removed."
+          iconName="package-x"
+        />
       </View>
     );
   }
@@ -114,7 +125,7 @@ export default function ProductDetailsScreen() {
           {/* Dot Indicators */}
           {product.images.length > 1 && (
             <View className="absolute bottom-4 w-full flex-row justify-center gap-1.5">
-              {product.images.map((_: any, i: any) => (
+              {product.images.map((_: string, i: number) => (
                 <View key={i} className={`h-2 rounded-full ${i === activeImageIndex ? "w-6 bg-brand-600" : "w-2 bg-card/60"}`} />
               ))}
             </View>
@@ -250,11 +261,11 @@ export default function ProductDetailsScreen() {
                   <View className="flex-row items-center gap-3">
                     <View className="w-10 h-10 rounded-full bg-brand-100 items-center justify-center">
                       <Text className="text-body-sm font-bold text-brand-600 font-heading">
-                        {review.user.charAt(0)}
+                        {typeof review.user === 'string' ? review.user.charAt(0) : review.user.name?.charAt(0) || 'U'}
                       </Text>
                     </View>
                     <View>
-                      <Text className="text-body-sm font-bold text-foreground font-body">{review.user}</Text>
+                      <Text className="text-body-sm font-bold text-foreground font-body">{typeof review.user === 'string' ? review.user : review.user.name}</Text>
                       <View className="flex-row gap-0.5 mt-0.5">
                         {[1, 2, 3, 4, 5].map((star) => (
                           <Icon key={star} name="star" size={10} color={star <= review.rating ? "#f59e0b" : "#e2e8f0"} />

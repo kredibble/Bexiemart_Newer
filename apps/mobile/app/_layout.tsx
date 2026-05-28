@@ -1,5 +1,5 @@
 import "../global.css";
-import { Stack, useRouter, useRootNavigationState } from "expo-router";
+import { Stack, useRouter, useRootNavigationState, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { View } from "react-native";
@@ -8,6 +8,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useAuthStore } from "../src/lib/stores/auth-store";
 import { LoadingSpinner } from "../src/components/ui/LoadingSpinner";
 import { GlobalPopup } from "../src/components/ui/GlobalPopup";
+import { ErrorBoundary } from "../src/components/ui/ErrorBoundary";
 import { PaystackProvider } from 'react-native-paystack-webview';
 import {
   Raleway_400Regular,
@@ -42,6 +43,7 @@ export default function RootLayout() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const router = useRouter();
   const rootNavigationState = useRootNavigationState();
+  const segments = useSegments();
 
   useEffect(() => {
     hydrate();
@@ -49,38 +51,44 @@ export default function RootLayout() {
 
   useEffect(() => {
     // Wait until the root layout has mounted completely
-    if (!rootNavigationState?.key) return;
+    if (!rootNavigationState?.key || !fontsLoaded || isLoading) return;
 
-    if (!isLoading && !isAuthenticated) {
-      // If the user isn't authenticated (e.g., token expired or manually logged out), kick them to auth
-      router.replace("/(auth)/login");
+    const inAuthGroup = segments[0] === '(auth)';
+
+    try {
+      if (!isAuthenticated && !inAuthGroup) {
+        // If the user isn't authenticated (e.g., token expired or manually logged out), kick them to auth
+        router.replace("/(auth)/login");
+      } else if (isAuthenticated && inAuthGroup) {
+        // If the user is authenticated and is on the auth screen, redirect to home
+        router.replace("/(customer)/(tabs)/(home)");
+      }
+    } catch (err) {
+      console.warn("Navigation failed (likely due to ErrorBoundary removing Stack):", err);
     }
-  }, [isLoading, isAuthenticated, rootNavigationState?.key]);
+  }, [isLoading, isAuthenticated, rootNavigationState?.key, segments, fontsLoaded]);
 
-  if (!fontsLoaded || isLoading) {
-    return (
-      <SafeAreaProvider>
-        <QueryClientProvider client={queryClient}>
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
-            <LoadingSpinner fullScreen message="Loading BexieMart..." />
-          </View>
-        </QueryClientProvider>
-      </SafeAreaProvider>
-    );
-  }
+
 
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <PaystackProvider publicKey={process.env.EXPO_PUBLIC_PAYSTACK_PUBLIC_KEY || "pk_test_placeholder"}>
           <StatusBar style="dark" />
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(auth)" />
-            <Stack.Screen name="(customer)" />
-            <Stack.Screen name="(vendor)" />
-            <Stack.Screen name="(dispatcher)" />
-          </Stack>
-          <GlobalPopup />
+          <ErrorBoundary>
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="(auth)" />
+              <Stack.Screen name="(customer)" />
+              <Stack.Screen name="(vendor)" />
+              <Stack.Screen name="(dispatcher)" />
+            </Stack>
+            {(!fontsLoaded || isLoading) && (
+              <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'white', justifyContent: 'center', alignItems: 'center', zIndex: 9999 }}>
+                <LoadingSpinner fullScreen message="Loading BexieMart..." />
+              </View>
+            )}
+            <GlobalPopup />
+          </ErrorBoundary>
         </PaystackProvider>
       </QueryClientProvider>
     </SafeAreaProvider>

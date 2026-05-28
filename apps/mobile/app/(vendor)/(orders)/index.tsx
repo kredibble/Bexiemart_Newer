@@ -84,7 +84,7 @@ export default function OrdersManagerScreen() {
           </View>
         ) : filteredOrders.length === 0 ? (
           <EmptyState
-            icon="📦"
+            iconName="package"
             title={`No ${activeFilter.toLowerCase()} orders`}
             description="When you get an order, it will appear here."
           />

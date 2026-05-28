@@ -3,6 +3,9 @@ import { Image } from "expo-image";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon } from "@/components/ui/Icon";
+import { LoadingState } from "@/components/ui/LoadingState";
+import { ErrorState } from "@/components/ui/ErrorState";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useProducts, useStoreProfile } from "@/lib/hooks/use-products";
 import { useAddToCart } from "@/lib/hooks/use-cart";
 import { useFavoritesStore } from "@/lib/stores/favorites-store";
@@ -14,8 +17,8 @@ export default function StoreProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   
-  const { data: store, isLoading: isStoreLoading, error } = useStoreProfile(id!);
-  const { data: productsData, isLoading: isProductsLoading } = useProducts({ vendorId: id! });
+  const { data: store, isPending: isStoreLoading, isError: isStoreError, error: storeError, refetch: refetchStore } = useStoreProfile(id!);
+  const { data: productsData, isPending: isProductsLoading, isError: isProductsError, refetch: refetchProducts } = useProducts({ vendorId: id! });
   
   const addToCartMutation = useAddToCart();
   const { isFavorite, toggleFavorite } = useFavoritesStore();
@@ -40,23 +43,25 @@ export default function StoreProfileScreen() {
     });
   };
 
-  if (isStoreLoading) {
-    return (
-      <View className="flex-1 bg-background justify-center items-center">
-        <ActivityIndicator size="large" color="#004CFF" />
-      </View>
-    );
+  if (isStoreLoading || isProductsLoading) {
+    return <LoadingState message="Loading store details..." />;
   }
 
-  if (error || !store) {
+  if (isStoreError || storeError || isProductsError) {
+    return <ErrorState message="Failed to load the store. Please check your connection." onRetry={() => { refetchStore(); refetchProducts(); }} />;
+  }
+
+  if (!store) {
     return (
-      <View className="flex-1 bg-background justify-center items-center px-6">
-        <BackButton />
-        <Icon name="store" size={48} color="#94A3B8" />
-        <Text className="text-heading-sm font-bold mt-4 text-center">Store Not Found</Text>
-        <Text className="text-body-md text-muted-foreground mt-2 text-center">
-          The store you are looking for does not exist or is currently unavailable.
-        </Text>
+      <View className="flex-1 bg-background pt-12">
+        <View className="px-6 pb-4">
+          <BackButton />
+        </View>
+        <EmptyState 
+          title="Store Not Found" 
+          description="The store you are looking for does not exist or is currently unavailable."
+          iconName="store"
+        />
       </View>
     );
   }
@@ -70,8 +75,8 @@ export default function StoreProfileScreen() {
       <FlatList
         data={products}
         numColumns={2}
-        contentContainerStyle={{ paddingBottom: 20 }}
-        columnWrapperStyle={{ gap: 14, paddingHorizontal: 20 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20, gap: 14 }}
+        columnWrapperStyle={{ gap: 14 }}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
@@ -163,23 +168,12 @@ export default function StoreProfileScreen() {
           </View>
         }
         ListEmptyComponent={
-          isProductsLoading ? (
-            <View className="items-center justify-center py-10">
-              <ActivityIndicator size="small" color="#004CFF" />
-            </View>
-          ) : (
-            <View className="items-center justify-center py-16 px-8">
-              <View className="w-20 h-20 rounded-full bg-muted items-center justify-center mb-5">
-                <Icon name="package" size={32} color="#cbd5e1" />
-              </View>
-              <Text className="text-heading-sm font-bold text-foreground font-heading text-center">
-                No products yet
-              </Text>
-              <Text className="text-body-md text-muted-foreground font-body mt-2 text-center">
-                This store hasn't added any products.
-              </Text>
-            </View>
-          )
+          <EmptyState 
+            title="No products yet" 
+            description="This store hasn't added any products." 
+            iconName="package"
+            fullScreen={false}
+          />
         }
         renderItem={({ item }) => {
           const isFav = isFavorite(item.id);

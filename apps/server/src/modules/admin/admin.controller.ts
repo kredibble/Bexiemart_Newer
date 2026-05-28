@@ -38,8 +38,8 @@ export class AdminController {
 
   @ApiOperation({ summary: "List all vendors" })
   @Get("vendors")
-  listVendors() {
-    return this.adminService.listVendors();
+  listVendors(@Query("page") page?: string, @Query("limit") limit?: string) {
+    return this.adminService.listVendors(Number(page) || 1, Number(limit) || 20);
   }
 
   @ApiOperation({ summary: "Approve a vendor" })

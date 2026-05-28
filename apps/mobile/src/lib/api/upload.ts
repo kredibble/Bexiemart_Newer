@@ -8,7 +8,9 @@ const getToken = async () => {
   return await SecureStore.getItemAsync("bexiemart_token");
 };
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000/api";
+import { ENV } from "../../config";
+
+const API_URL = ENV.API_URL;
 
 export const uploadApi = {
   uploadFile: async (file: { uri: string; name: string; type: string }) => {

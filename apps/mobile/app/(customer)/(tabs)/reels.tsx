@@ -33,9 +33,9 @@ export default function ReelsScreen() {
 
   // Track which reel is currently in view
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 70 }).current;
-  const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: Array<{ index: number | null }> }) => {
     if (viewableItems.length > 0) {
-      setActiveReelIndex(viewableItems[0].index);
+      setActiveReelIndex(viewableItems[0].index ?? 0);
     }
   }).current;
 
@@ -67,7 +67,7 @@ export default function ReelsScreen() {
     );
   }
 
-  const renderReel = ({ item, index }: { item: any, index: number }) => {
+  const renderReel = ({ item, index }: { item: any; index: number }) => {
     const isActive = index === activeReelIndex;
     const vendorName = item.user?.name ?? "Vendor";
     const productName = item.product?.name ?? "Product";
@@ -222,7 +222,7 @@ export default function ReelsScreen() {
                   <Text className="text-muted-foreground text-[14px]">No comments yet. Be the first!</Text>
                 </View>
               }
-              renderItem={({ item }: any) => (
+              renderItem={({ item }: { item: any }) => (
                 <View className="flex-row gap-3 mb-6">
                   <View className="w-8 h-8 rounded-full bg-accent items-center justify-center">
                     <Text className="text-muted-foreground font-bold text-[12px]">{item.username.charAt(0).toUpperCase()}</Text>

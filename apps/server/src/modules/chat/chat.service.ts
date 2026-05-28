@@ -37,19 +37,26 @@ export class ChatService {
     // Given the scale, querying messages per conversation might be okay for now.
     const conversationIds = participants.map(p => p.conversationId);
     
-    // Fetch unread counts
-    const unreadCounts = await Promise.all(
-      participants.map(async p => {
-        const count = await this.prisma.message.count({
+    const orConditions = participants.map(p => ({
+      conversationId: p.conversationId,
+      createdAt: { gt: p.lastReadAt || new Date(0) }
+    }));
+
+    const unreadMessages = orConditions.length > 0 
+      ? await this.prisma.message.groupBy({
+          by: ["conversationId"],
           where: {
-            conversationId: p.conversationId,
             senderId: { not: userId },
-            createdAt: { gt: p.lastReadAt || new Date(0) }
-          }
-        });
-        return { conversationId: p.conversationId, count };
-      })
-    );
+            OR: orConditions,
+          },
+          _count: { id: true }
+        })
+      : [];
+
+    const unreadCounts = unreadMessages.map(u => ({
+      conversationId: u.conversationId,
+      count: u._count.id
+    }));
 
     const unreadMap = new Map(unreadCounts.map(u => [u.conversationId, u.count]));
 

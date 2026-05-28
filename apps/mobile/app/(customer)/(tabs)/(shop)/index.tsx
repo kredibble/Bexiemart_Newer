@@ -4,6 +4,9 @@ import { useState, useMemo } from "react";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon } from "@/components/ui/Icon";
+import { LoadingState } from "@/components/ui/LoadingState";
+import { ErrorState } from "@/components/ui/ErrorState";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useProducts, useCategories } from "@/lib/hooks/use-products";
 import { useAddToCart } from "@/lib/hooks/use-cart";
 import { useFavoritesStore } from "@/lib/stores/favorites-store";
@@ -15,8 +18,8 @@ export default function ShopScreen() {
   const router = useRouter();
   const searchParams = useLocalSearchParams<{ category?: string }>();
   const insets = useSafeAreaInsets();
-  const { data: productsData, isLoading } = useProducts();
-  const { data: categoriesData } = useCategories();
+  const { data: productsData, isPending: isProductsLoading, isError: isProductsError, refetch: refetchProducts } = useProducts();
+  const { data: categoriesData, isPending: isCategoriesLoading, isError: isCategoriesError, refetch: refetchCategories } = useCategories();
   const addToCartMutation = useAddToCart();
   const { isFavorite, toggleFavorite } = useFavoritesStore();
 
@@ -70,6 +73,14 @@ export default function ShopScreen() {
     "price-low": "Price: Low to High",
     "price-high": "Price: High to Low",
   };
+
+  if (isProductsLoading || isCategoriesLoading) {
+    return <LoadingState message="Loading shop..." />;
+  }
+
+  if (isProductsError || isCategoriesError) {
+    return <ErrorState message="Failed to load products." onRetry={() => { refetchProducts(); refetchCategories(); }} />;
+  }
 
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
@@ -135,42 +146,24 @@ export default function ShopScreen() {
         </Pressable>
       </View>
 
-      {isLoading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#004CFF" />
-        </View>
-      ) : (
-        <FlatList
-          data={filteredProducts}
-          numColumns={2}
-          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20, gap: 14 }}
-          columnWrapperStyle={{ gap: 14 }}
-          keyExtractor={(item) => item.id}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <View className="items-center justify-center py-16 px-8">
-              <View className="w-20 h-20 rounded-full bg-muted items-center justify-center mb-5">
-                <Icon name="search" size={32} color="#cbd5e1" />
-              </View>
-              <Text className="text-heading-sm font-bold text-foreground font-heading text-center">
-                No products found
-              </Text>
-              <Text className="text-body-md text-muted-foreground font-body mt-2 text-center">
-                Try adjusting your search or filters.
-              </Text>
-              {(searchQuery !== "" || activeCategoryFilter !== "All") && (
-                <Pressable style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
-                  className="mt-6 bg-brand-600 rounded-full px-6 py-3 active:opacity-70"
-                  onPress={() => { setSearchQuery(""); setActiveCategoryFilter("All"); }}
-                >
-                  <Text className="text-body-md font-bold text-white font-body">Clear Filters</Text>
-                </Pressable>
-              )}
-            </View>
-          }
-          renderItem={({ item }) => {
-            const isFav = isFavorite(item.id);
-            const discount = item.oldPrice > item.price ? Math.round((1 - item.price / item.oldPrice) * 100) : 0;
+      <FlatList
+        data={filteredProducts}
+        numColumns={2}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20, gap: 14 }}
+        columnWrapperStyle={{ gap: 14 }}
+        keyExtractor={(item) => item.id}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <EmptyState 
+            title="No products found" 
+            description="We couldn't find any products matching your search." 
+            iconName="search"
+            fullScreen={false}
+          />
+        }
+        renderItem={({ item }) => {
+          const isFav = isFavorite(item.id);
+          const discount = item.oldPrice > item.price ? Math.round((1 - item.price / item.oldPrice) * 100) : 0;
             return (
               <Pressable style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
                 className="flex-1 bg-card rounded-[24px] overflow-hidden border border-border pb-3"
@@ -229,8 +222,6 @@ export default function ShopScreen() {
             );
           }}
         />
-      )}
-
       <Modal visible={showSortModal} transparent animationType="fade" onRequestClose={() => setShowSortModal(false)}>
         <Pressable style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]} className="flex-1 bg-black/40 justify-end"  onPress={() => setShowSortModal(false)}>
           <View className="bg-card rounded-t-[32px] pt-6 pb-10 px-5" onStartShouldSetResponder={() => true}>

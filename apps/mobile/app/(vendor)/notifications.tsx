@@ -46,7 +46,7 @@ export default function VendorNotificationsScreen() {
         >
           {notifList.length === 0 ? (
             <EmptyState
-              icon="bell"
+              iconName="bell"
               title="No notifications"
               description="You're all caught up! New notifications will appear here."
             />

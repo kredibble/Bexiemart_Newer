@@ -1,5 +1,18 @@
 import { apiClient } from "./client";
 
+export interface CardData {
+  cardNumber: string;
+  expiryMonth: string;
+  expiryYear: string;
+  cvv: string;
+}
+
+export interface CardUpdateData {
+  expiryMonth?: string;
+  expiryYear?: string;
+  isDefault?: boolean;
+}
+
 export const walletApi = {
   getWallet: () => apiClient.get("/wallet"),
   getTransactions: (page = 1) => apiClient.get(`/wallet/transactions?page=${page}`),
@@ -12,9 +25,9 @@ export const walletApi = {
   resetPinFailures: () => apiClient.post("/wallet/pin/reset"),
   getPinStatus: () => apiClient.get("/wallet/pin/status"),
   getCards: () => apiClient.get("/wallet/cards"),
-  addCard: (data: any) => apiClient.post("/wallet/cards", data),
-  verifyAndSaveCard: (data: any) => apiClient.post("/wallet/cards/verify-save", data),
-  updateCard: (id: string, data: any) => apiClient.put(`/wallet/cards/${id}`, data),
+  addCard: (data: CardData) => apiClient.post("/wallet/cards", data),
+  verifyAndSaveCard: (data: { reference: string }) => apiClient.post("/wallet/cards/verify-save", data),
+  updateCard: (id: string, data: CardUpdateData) => apiClient.put(`/wallet/cards/${id}`, data),
   deleteCard: (id: string) => apiClient.delete(`/wallet/cards/${id}`),
   setDefaultCard: (id: string) => apiClient.post(`/wallet/cards/${id}/default`),
 

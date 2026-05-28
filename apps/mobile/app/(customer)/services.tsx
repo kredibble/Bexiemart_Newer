@@ -5,6 +5,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon } from "@/components/ui/Icon";
 import { useState, useCallback, useMemo } from "react";
 import { useServices, useServiceBookings } from "@/lib/hooks/use-services";
+import { LoadingState } from "@/components/ui/LoadingState";
+import { ErrorState } from "@/components/ui/ErrorState";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const CATEGORIES = [
   { id: "1", name: "Cleaning", icon: "wind", color: "#0ea5e9" },
@@ -29,7 +32,7 @@ export default function ServicesScreen() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activePromoIndex, setActivePromoIndex] = useState(0);
   
-  const { data: servicesData, isLoading } = useServices(
+  const { data: servicesData, isPending, isError, refetch } = useServices(
     activeCategory ? { category: activeCategory } : searchQuery ? { search: searchQuery } : undefined
   );
   const { data: bookingsData } = useServiceBookings();
@@ -56,6 +59,14 @@ export default function ServicesScreen() {
   const handleViewableItemsChanged = useCallback(({ viewableItems }: any) => {
     if (viewableItems.length > 0) setActivePromoIndex(viewableItems[0].index ?? 0);
   }, []);
+
+  if (isPending) {
+    return <LoadingState message="Loading services..." />;
+  }
+
+  if (isError) {
+    return <ErrorState message="Failed to load home services." onRetry={refetch} />;
+  }
 
   return (
     <View className="flex-1 bg-background">
@@ -191,14 +202,13 @@ export default function ServicesScreen() {
           </Text>
           
           {filteredProviders.length === 0 ? (
-            <View className="items-center justify-center py-10">
-              <View className="w-16 h-16 rounded-full bg-muted items-center justify-center mb-4">
-                <Icon name="search" size={24} color="#94a3b8" />
-              </View>
-              <Text className="font-heading font-bold text-foreground text-[16px]">No providers found</Text>
-              <Text className="font-body text-muted-foreground text-[14px] mt-1 text-center">
-                Try adjusting your search or filters.
-              </Text>
+            <View className="py-4">
+              <EmptyState 
+                title="No providers found" 
+                description="Try adjusting your search or filters." 
+                iconName="search"
+                fullScreen={false}
+              />
             </View>
           ) : (
             <View className="gap-4">

@@ -5,7 +5,7 @@ import { PrismaService } from "../../prisma/prisma.service";
 export class FoodService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getRestaurants(category?: string) {
+  async getRestaurants(category?: string, page: number = 1, limit: number = 20) {
     const where: any = {
       foodItems: { some: { isActive: true, isAvailable: true } },
     };
@@ -16,19 +16,26 @@ export class FoodService {
       };
     }
 
-    const vendors = await this.prisma.vendorProfile.findMany({
-      where,
-      include: {
-        _count: { select: { foodItems: { where: { isActive: true, isAvailable: true } } } },
-        foodItems: {
-          where: { isActive: true, isAvailable: true },
-          orderBy: { price: "asc" },
-          take: 1,
-        },
-      },
-    });
+    const skip = (page - 1) * limit;
 
-    return vendors.map((v) => ({
+    const [vendors, total] = await Promise.all([
+      this.prisma.vendorProfile.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          _count: { select: { foodItems: { where: { isActive: true, isAvailable: true } } } },
+          foodItems: {
+            where: { isActive: true, isAvailable: true },
+            orderBy: { price: "asc" },
+            take: 1,
+          },
+        },
+      }),
+      this.prisma.vendorProfile.count({ where })
+    ]);
+
+    const data = vendors.map((v) => ({
       id: v.id,
       shopName: v.shopName,
       slug: v.slug,
@@ -40,6 +47,8 @@ export class FoodService {
       foodCount: v._count.foodItems,
       minPrice: v.foodItems[0] ? Number(v.foodItems[0].price) : null,
     }));
+
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   async getRestaurant(id: string) {
@@ -87,7 +96,7 @@ export class FoodService {
     };
   }
 
-  async getFoodItems(category?: string, search?: string) {
+  async getFoodItems(category?: string, search?: string, page: number = 1, limit: number = 20) {
     const where: any = { isActive: true, isAvailable: true };
 
     if (category) where.category = category;
@@ -98,17 +107,24 @@ export class FoodService {
       ];
     }
 
-    const items = await this.prisma.foodItem.findMany({
-      where,
-      include: {
-        vendor: {
-          select: { id: true, shopName: true, slug: true, logo: true, city: true },
-        },
-      },
-      orderBy: { category: "asc" },
-    });
+    const skip = (page - 1) * limit;
 
-    return items.map((item) => ({
+    const [items, total] = await Promise.all([
+      this.prisma.foodItem.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          vendor: {
+            select: { id: true, shopName: true, slug: true, logo: true, city: true },
+          },
+        },
+        orderBy: { category: "asc" },
+      }),
+      this.prisma.foodItem.count({ where })
+    ]);
+
+    const data = items.map((item) => ({
       id: item.id,
       name: item.name,
       description: item.description,
@@ -118,6 +134,8 @@ export class FoodService {
       prepTime: item.prepTime,
       vendor: item.vendor,
     }));
+
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   async addToCart(userId: string, foodItemId: string, quantity: number, specialInstructions?: string) {
@@ -295,17 +313,24 @@ export class FoodService {
     return order;
   }
 
-  async getOrders(userId: string) {
-    const orders = await this.prisma.foodOrder.findMany({
-      where: { userId },
-      include: {
-        items: true,
-        vendor: { select: { id: true, shopName: true, logo: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+  async getOrders(userId: string, page: number = 1, limit: number = 20) {
+    const skip = (page - 1) * limit;
 
-    return orders.map((o) => ({
+    const [orders, total] = await Promise.all([
+      this.prisma.foodOrder.findMany({
+        where: { userId },
+        skip,
+        take: limit,
+        include: {
+          items: true,
+          vendor: { select: { id: true, shopName: true, logo: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+      this.prisma.foodOrder.count({ where: { userId } })
+    ]);
+
+    const data = orders.map((o) => ({
       ...o,
       subtotal: Number(o.subtotal),
       deliveryFee: Number(o.deliveryFee),
@@ -316,6 +341,8 @@ export class FoodService {
         total: Number(i.total),
       })),
     }));
+
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   async getOrder(userId: string, orderId: string) {

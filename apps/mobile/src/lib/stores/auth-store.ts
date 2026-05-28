@@ -19,14 +19,23 @@ const storage = {
   }
 };
 
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  image?: string;
+  [key: string]: any;
+}
+
 interface AuthState {
-  user: any | null;
+  user: User | null;
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
 
-  setAuth: (user: any, token: string) => Promise<void>;
-  setUser: (user: any) => void;
+  setAuth: (user: User, token: string) => Promise<void>;
+  setUser: (user: User) => void;
   logout: () => Promise<void>;
   hydrate: () => Promise<void>;
 }

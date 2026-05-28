@@ -5,20 +5,27 @@ import { PrismaService } from "../../prisma/prisma.service";
 export class CustomerServicesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(category?: string, search?: string) {
+  async findAll(category?: string, search?: string, page: number = 1, limit: number = 20) {
     const where: any = { isActive: true };
 
     if (category) where.category = category;
 
     if (search) where.name = { contains: search, mode: "insensitive" };
 
-    const services = await this.prisma.service.findMany({
-      where,
-      include: {
-        vendor: { select: { shopName: true, slug: true, logo: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    const skip = (page - 1) * limit;
+
+    const [services, total] = await Promise.all([
+      this.prisma.service.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          vendor: { select: { shopName: true, slug: true, logo: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+      this.prisma.service.count({ where })
+    ]);
 
     const categories = await this.prisma.service.findMany({
       where: { isActive: true },
@@ -28,8 +35,12 @@ export class CustomerServicesService {
     });
 
     return {
-      services,
+      data: services,
       categories: categories.map((c: any) => c.category),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
     };
   }
 
@@ -65,18 +76,27 @@ export class CustomerServicesService {
     });
   }
 
-  async findMyBookings(userId: string) {
-    return this.prisma.serviceBooking.findMany({
-      where: { userId },
-      include: {
-        service: {
-          include: {
-            vendor: { select: { shopName: true, slug: true, logo: true } },
+  async findMyBookings(userId: string, page: number = 1, limit: number = 20) {
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.prisma.serviceBooking.findMany({
+        where: { userId },
+        skip,
+        take: limit,
+        include: {
+          service: {
+            include: {
+              vendor: { select: { shopName: true, slug: true, logo: true } },
+            },
           },
         },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+        orderBy: { createdAt: "desc" },
+      }),
+      this.prisma.serviceBooking.count({ where: { userId } })
+    ]);
+
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   async cancel(userId: string, bookingId: string) {

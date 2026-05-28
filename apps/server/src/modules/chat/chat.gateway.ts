@@ -25,6 +25,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   
   // Track active socket IDs per user
   private userSockets = new Map<string, Set<string>>();
+  
+  // Rate limiting for messages
+  private messageRateLimits = new Map<string, number[]>();
 
   constructor(private readonly chatService: ChatService) {}
 
@@ -137,6 +140,20 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: { conversationId: string; content?: string; type?: 'TEXT' | 'IMAGE'; mediaUrl?: string },
   ) {
     if (!client.userId) return;
+
+    // Rate limiting: max 30 messages per minute per user
+    const now = Date.now();
+    const window = 60000;
+    const limit = 30;
+    let timestamps = this.messageRateLimits.get(client.userId) || [];
+    timestamps = timestamps.filter(t => now - t < window);
+    if (timestamps.length >= limit) {
+      client.emit("error", "Rate limit exceeded. Please wait.");
+      return;
+    }
+    timestamps.push(now);
+    this.messageRateLimits.set(client.userId, timestamps);
+
     const message = await this.chatService.createMessage(
       data.conversationId,
       client.userId,

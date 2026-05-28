@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, NotFoundException, ForbiddenException,
 import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "../../prisma/prisma.service";
 import * as bcrypt from "bcryptjs";
+import { CreateCardDto, UpdateCardDto } from "./dto/card.dto";
 
 @Injectable()
 export class WalletService {
@@ -155,8 +156,9 @@ export class WalletService {
     return { balance: updatedWallet?.balance };
   }
 
-  async transfer(userId: string, recipientEmail: string, amount: number) {
+  async transfer(userId: string, recipientEmail: string, amount: number, pin: string) {
     const senderWallet = await this.getWallet(userId);
+    await this.verifyPin(userId, pin);
 
     if (Number(senderWallet.balance) < amount) {
       throw new BadRequestException("Insufficient balance");
@@ -342,7 +344,7 @@ export class WalletService {
     });
   }
 
-  async addCard(userId: string, data: any) {
+  async addCard(userId: string, data: CreateCardDto) {
     const wallet = await this.getWallet(userId);
     
     const existingCount = await this.prisma.card.count({ where: { walletId: wallet.id } });
@@ -368,7 +370,7 @@ export class WalletService {
     });
   }
 
-  async updateCard(userId: string, cardId: string, data: any) {
+  async updateCard(userId: string, cardId: string, data: UpdateCardDto) {
     const wallet = await this.getWallet(userId);
     
     const card = await this.prisma.card.findUnique({ where: { id: cardId } });
@@ -539,8 +541,9 @@ export class WalletService {
     return { success: true };
   }
 
-  async withdraw(userId: string, amount: number, accountId: string, accountType: 'bank' | 'momo') {
+  async withdraw(userId: string, amount: number, accountId: string, accountType: 'bank' | 'momo', pin: string) {
     const wallet = await this.getWallet(userId);
+    await this.verifyPin(userId, pin);
 
     const platformConfig = await this.prisma.platformConfig.findFirst();
     const fee = platformConfig ? Number(platformConfig.withdrawalFeeFlat) : 2.0;

@@ -1,5 +1,6 @@
 import { BackButton } from "@/components/ui/BackButton";
-import { View, Text, ScrollView, Pressable, Modal, ActivityIndicator, KeyboardAvoidingView, Platform, Image, TextInput } from "react-native";
+import { View, Text, ScrollView, Pressable, Modal, ActivityIndicator, KeyboardAvoidingView, Platform, TextInput } from "react-native";
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon } from "@/components/ui/Icon";

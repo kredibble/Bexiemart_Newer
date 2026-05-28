@@ -1,5 +1,6 @@
 import { BackButton } from "@/components/ui/BackButton";
-import { View, Text, ScrollView, Alert, Pressable, Image, ActivityIndicator } from "react-native";
+import { View, Text, ScrollView, Alert, Pressable, ActivityIndicator } from "react-native";
+import { Image } from "expo-image";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useCreateProduct, useUpdateProduct } from "@/lib/hooks/use-vendor";

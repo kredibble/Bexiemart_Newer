@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Req } from "@nestjs/common";
+import { Controller, Get, Post, Body, Param, UseGuards, Req, Query } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBody } from "@nestjs/swagger";
 import { AuthGuard } from "../../guards/auth.guard";
 import { OrdersService } from "./orders.service";
@@ -19,8 +19,8 @@ export class OrdersController {
 
   @ApiOperation({ summary: "Get all orders for current user" })
   @Get()
-  findAll(@Req() req: any) {
-    return this.ordersService.findAll(req.user.id);
+  findAll(@Req() req: any, @Query("page") page?: string, @Query("limit") limit?: string) {
+    return this.ordersService.findAll(req.user.id, Number(page) || 1, Number(limit) || 20);
   }
 
   @ApiOperation({ summary: "Get an order by ID" })

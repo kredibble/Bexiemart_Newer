@@ -85,14 +85,14 @@ describe("WalletService", () => {
     it("should throw BadRequestException if insufficient balance", async () => {
       const wallet = { id: "w1", userId: "u1", balance: 10, user: { name: "Sender" } };
       prisma.wallet.findUnique.mockResolvedValue(wallet);
-      await expect(service.transfer("u1", "recip@test.com", 100)).rejects.toThrow(BadRequestException);
+      await expect(service.transfer("u1", "recip@test.com", 100, "1234")).rejects.toThrow(BadRequestException);
     });
 
     it("should throw NotFoundException if recipient not found", async () => {
       const wallet = { id: "w1", userId: "u1", balance: 200, user: { name: "Sender" } };
       prisma.wallet.findUnique.mockResolvedValue(wallet);
       prisma.user.findUnique.mockResolvedValue(null);
-      await expect(service.transfer("u1", "missing@test.com", 100)).rejects.toThrow(NotFoundException);
+      await expect(service.transfer("u1", "missing@test.com", 100, "1234")).rejects.toThrow(NotFoundException);
     });
 
     it("should create sent+received transactions and update both wallets", async () => {
@@ -108,7 +108,8 @@ describe("WalletService", () => {
       prisma.user.findUnique.mockResolvedValue(recipientUser);
       prisma.$transaction.mockImplementation((args: any) => Promise.all(args));
 
-      const result = await service.transfer("u1", "recip@test.com", 100);
+      jest.spyOn(service, "verifyPin").mockResolvedValue({ valid: true });
+      const result = await service.transfer("u1", "recip@test.com", 100, "1234");
       expect(result).toHaveProperty("reference");
       expect(result.newBalance).toBe(100);
       expect(prisma.wallet.update).toHaveBeenCalledTimes(2);

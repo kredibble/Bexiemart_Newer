@@ -172,7 +172,9 @@ export class ProductsService {
 
     try {
       await this.prisma.$executeRawUnsafe(`UPDATE "VendorProfile" SET "visits" = "visits" + 1 WHERE "id" = $1`, id);
-    } catch(e) {}
+    } catch(e) {
+      console.error(`Failed to track visit for store ${id}:`, e);
+    }
 
     const stats = await this.prisma.product.aggregate({
       where: { vendorId: id, isActive: true, isDeleted: false },

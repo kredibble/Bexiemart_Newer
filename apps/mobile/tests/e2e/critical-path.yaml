@@ -1,0 +1,54 @@
+appId: com.bexiemart.app
+---
+- launchApp:
+    clearState: true
+- tapOn: "Get Started" # Or whatever the initial splash screen button is if it exists
+- extendedWaitUntil:
+    visible: "Sign In"
+    timeout: 15000
+
+# AUTH
+- tapOn:
+    id: "email-input" # Or tap on placeholder text if no testID
+    optional: true
+- inputText: "testuser@bexiemart.com"
+- tapOn:
+    id: "password-input"
+    optional: true
+- inputText: "Password123!"
+- tapOn: "Sign In"
+
+# BROWSE
+- extendedWaitUntil:
+    visible: "Home" # Tab bar
+    timeout: 15000
+- tapOn: "Shop" # Move to shop tab
+- assertVisible: "Search for food, groceries..."
+
+# CART
+# Tap the first product
+- tapOn:
+    point: 50%, 40% # Fallback coordinate tap if text matching is tough on dynamic lists
+- assertVisible: "Add to Cart"
+- tapOn: "Add to Cart"
+- tapOn: "Cart" # Navigate to cart via tab
+- assertVisible: "Checkout"
+- tapOn: "Checkout"
+
+# CHECKOUT
+- assertVisible: "Delivery Details"
+- tapOn: "Full name"
+- inputText: "Kofi Mensah"
+- tapOn: "Phone number"
+- inputText: "0241234567"
+- tapOn: "Delivery address"
+- inputText: "Legon Hall, Room 12"
+- tapOn: "City"
+- inputText: "Accra"
+- tapOn: "Standard Delivery"
+- tapOn: "Card Payment"
+- tapOn: "Pay GHS.*"
+
+# SUCCESS
+- assertVisible: "Order Successful"
+- tapOn: "Back to Home"

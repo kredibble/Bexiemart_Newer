@@ -7,10 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "bexiemart",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
-    "splash": {
-      "backgroundColor": "#004CFF"
-    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.bexiemart.app",
@@ -25,7 +21,9 @@
         "backgroundColor": "#004CFF"
       },
       "package": "com.bexiemart.app",
-      "edgeToEdgeEnabled": true
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -36,15 +34,44 @@
       "expo-font",
       "expo-secure-store",
       [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#004CFF",
+          "image": "./assets/images/icon.png",
+          "imageWidth": 200
+
+        }
+      ],
+      [
         "expo-image-picker",
         {
           "photosPermission": "Select product images for your BexieMart listings.",
           "cameraPermission": "Take photos of your products for BexieMart."
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true,
+            "enableEdgeToEdge": true,
+            "newArchEnabled": true
+          },
+          "ios": {
+            "useFrameworks": "static",
+            "newArchEnabled": true
+          }
+        }
       ]
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a830e794-6932-47fd-9779-9b1317c59f3f"
+      }
     }
   }
 }

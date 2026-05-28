@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Patch, Param, Body, Req, UseGuards } from "@nestjs/common";
+import { Controller, Get, Post, Put, Delete, Patch, Param, Body, Req, UseGuards, Query } from "@nestjs/common";
 import { AuthGuard } from "../../guards/auth.guard";
 import { VendorService } from "./vendor.service";
 import { OnboardVendorDto } from "./dto/onboard-vendor.dto";
@@ -36,8 +36,8 @@ export class VendorController {
 
   @ApiOperation({ summary: "List vendor products" })
   @Get("products")
-  getProducts(@Req() req: any) {
-    return this.vendorService.getProducts(req.user.id);
+  getProducts(@Req() req: any, @Query("page") page?: string, @Query("limit") limit?: string) {
+    return this.vendorService.getProducts(req.user.id, Number(page) || 1, Number(limit) || 20);
   }
 
   @ApiOperation({ summary: "Create a product" })
@@ -60,8 +60,8 @@ export class VendorController {
 
   @ApiOperation({ summary: "Get vendor orders" })
   @Get("orders")
-  getOrders(@Req() req: any) {
-    return this.vendorService.getOrders(req.user.id);
+  getOrders(@Req() req: any, @Query("page") page?: string, @Query("limit") limit?: string) {
+    return this.vendorService.getOrders(req.user.id, Number(page) || 1, Number(limit) || 20);
   }
 
   @ApiOperation({ summary: "Get order details" })

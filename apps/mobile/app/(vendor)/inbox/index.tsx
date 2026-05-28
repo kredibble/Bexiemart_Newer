@@ -38,7 +38,7 @@ export default function VendorInboxScreen() {
         >
           {conversationList.length === 0 ? (
             <EmptyState
-              icon="message-square"
+              iconName="message-square"
               title="No messages yet"
               description="When customers send you messages, they will appear here."
             />

@@ -63,17 +63,25 @@ export class VendorService {
     };
   }
 
-  async getProducts(userId: string) {
+  async getProducts(userId: string, page: number = 1, limit: number = 20) {
     const profile = await this.getVendorProfile(userId);
+    const skip = (page - 1) * limit;
 
-    return this.prisma.product.findMany({
-      where: { vendorId: profile.id, isDeleted: false },
-      include: {
-        images: { orderBy: { order: "asc" } },
-        category: { select: { id: true, name: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    const [data, total] = await Promise.all([
+      this.prisma.product.findMany({
+        where: { vendorId: profile.id, isDeleted: false },
+        skip,
+        take: limit,
+        include: {
+          images: { orderBy: { order: "asc" } },
+          category: { select: { id: true, name: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+      this.prisma.product.count({ where: { vendorId: profile.id, isDeleted: false } })
+    ]);
+
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   async createProduct(userId: string, data: CreateProductDto) {
@@ -164,11 +172,33 @@ export class VendorService {
     return { success: true };
   }
 
-  async getOrders(userId: string) {
+  async getOrders(userId: string, page: number = 1, limit: number = 20) {
     const profile = await this.getVendorProfile(userId);
 
-    const orderItems = await this.prisma.orderItem.findMany({
+    // To paginate correctly by orders, we need to find distinct orders first
+    const skip = (page - 1) * limit;
+    
+    // Get unique order IDs for this vendor
+    const distinctOrderItems = await this.prisma.orderItem.findMany({
       where: { product: { vendorId: profile.id } },
+      select: { orderId: true },
+      distinct: ['orderId'],
+      orderBy: { order: { createdAt: "desc" } },
+      skip,
+      take: limit,
+    });
+    
+    const totalOrderItems = await this.prisma.orderItem.findMany({
+      where: { product: { vendorId: profile.id } },
+      select: { orderId: true },
+      distinct: ['orderId'],
+    });
+    const total = totalOrderItems.length;
+
+    const orderIds = distinctOrderItems.map(oi => oi.orderId);
+
+    const orderItems = await this.prisma.orderItem.findMany({
+      where: { orderId: { in: orderIds }, product: { vendorId: profile.id } },
       include: {
         order: {
           include: {
@@ -207,7 +237,11 @@ export class VendorService {
       });
     }
 
-    return Array.from(orderMap.values());
+    const data = Array.from(orderMap.values());
+    // Since orderItems has an implicit sort, maintain order based on distinctOrderItems
+    const sortedData = distinctOrderItems.map(doi => data.find(d => d.id === doi.orderId)).filter(Boolean);
+
+    return { data: sortedData, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   async getOrder(userId: string, id: string) {

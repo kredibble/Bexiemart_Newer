@@ -48,7 +48,7 @@ export default function FavoritesScreen() {
     return (
       <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
         <EmptyState
-          icon="heart"
+          iconName="heart"
           title="No collections yet"
           description="Save products you love by tapping the heart icon. They will appear here for quick access."
           actionLabel="Browse Products"

@@ -19,16 +19,20 @@ export class VendorCustomersService {
       include: { order: { select: { userId: true, createdAt: true, total: true } } },
     });
 
+    const userIds = Array.from(new Set(orderItems.map(oi => oi.order.userId)));
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, name: true, email: true, image: true }
+    });
+
     const customerMap = new Map<string, { id: string; name: string; email: string; image: string | null; totalSpend: number; orderCount: number; lastOrderDate: Date }>();
+    
+    for (const u of users) {
+      customerMap.set(u.id, { ...u, totalSpend: 0, orderCount: 0, lastOrderDate: new Date(0) });
+    }
 
     for (const oi of orderItems) {
       const uid = oi.order.userId;
-      if (!customerMap.has(uid)) {
-        const user = await this.prisma.user.findUnique({ where: { id: uid }, select: { id: true, name: true, email: true, image: true } });
-        if (user) {
-          customerMap.set(uid, { ...user, totalSpend: 0, orderCount: 0, lastOrderDate: new Date(0) });
-        }
-      }
       const c = customerMap.get(uid);
       if (c) {
         c.totalSpend += Number(oi.order.total);

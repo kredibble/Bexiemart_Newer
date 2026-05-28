@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
+import { UpdateConfigDto } from "./dto/update-config.dto";
 
 @Injectable()
 export class AdminService {
@@ -43,32 +44,53 @@ export class AdminService {
 
   // ─── Vendors ───────────────────────────────────────────────────────────────────
 
-  async listVendors() {
-    const vendors = await this.prisma.vendorProfile.findMany({
-      include: {
-        user: { select: { id: true, name: true, email: true, image: true } },
-        _count: { select: { products: true } },
-      },
-      orderBy: { createdAt: "desc" },
+  async listVendors(page: number = 1, limit: number = 20) {
+    const skip = (page - 1) * limit;
+    const [vendors, total] = await Promise.all([
+      this.prisma.vendorProfile.findMany({
+        skip,
+        take: limit,
+        include: {
+          user: { select: { id: true, name: true, email: true, image: true } },
+          _count: { select: { products: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+      this.prisma.vendorProfile.count()
+    ]);
+
+    const vendorIds = vendors.map(v => v.id);
+
+    const allOrderItems = await this.prisma.orderItem.findMany({
+      where: { product: { vendorId: { in: vendorIds } } },
+      select: { orderId: true, product: { select: { vendorId: true } }, order: { select: { status: true } } },
     });
 
-    return Promise.all(
-      vendors.map(async (v) => {
-        const orderItems = await this.prisma.orderItem.findMany({
-          where: { product: { vendorId: v.id } },
-          select: { orderId: true, order: { select: { status: true } } },
-        });
-        const totalOrders = new Set(orderItems.map((o) => o.orderId)).size;
-        const pendingOrders = orderItems.filter((o) => o.order.status === "pending").length;
+    const orderStatsByVendor = vendorIds.reduce((acc, id) => {
+      acc[id] = { totalOrders: new Set(), pendingOrders: 0 };
+      return acc;
+    }, {} as Record<string, { totalOrders: Set<string>; pendingOrders: number }>);
 
-        return {
-          ...v,
-          _count: undefined,
-          productCount: v._count.products,
-          orderStats: { totalOrders, pendingOrders },
-        };
-      }),
-    );
+    allOrderItems.forEach(item => {
+      const vid = item.product?.vendorId;
+      if (!vid || !orderStatsByVendor[vid]) return;
+      orderStatsByVendor[vid].totalOrders.add(item.orderId);
+      if (item.order?.status === "pending") {
+        orderStatsByVendor[vid].pendingOrders++;
+      }
+    });
+
+    const data = vendors.map((v) => {
+      const stats = orderStatsByVendor[v.id];
+      return {
+        ...v,
+        _count: undefined,
+        productCount: v._count.products,
+        orderStats: { totalOrders: stats.totalOrders.size, pendingOrders: stats.pendingOrders },
+      };
+    });
+
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   async approveVendor(id: string) {
@@ -91,7 +113,7 @@ export class AdminService {
     return config;
   }
 
-  async updateConfig(data: any) {
+  async updateConfig(data: UpdateConfigDto) {
     const existing = await this.prisma.platformConfig.findFirst();
     if (existing) {
       return this.prisma.platformConfig.update({ where: { id: existing.id }, data });

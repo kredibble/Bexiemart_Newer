@@ -59,3 +59,20 @@ export class UpdateCardDto {
   @IsOptional()
   isDefault?: boolean;
 }
+
+export class VerifyCardDto {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  reference: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  cardholderName: string;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  isDefault?: boolean;
+}

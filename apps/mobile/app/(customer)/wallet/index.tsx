@@ -226,7 +226,7 @@ export default function WalletScreen() {
           {transactions.length === 0 ? (
             <View className="bg-card p-6 rounded-[24px] border border-border">
               <EmptyState
-                icon="file-text"
+                iconName="file-text"
                 title="No transactions yet"
                 description="Your activity will appear here after your first transaction"
               />

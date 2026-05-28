@@ -6,6 +6,8 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon } from "@/components/ui/Icon";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { LoadingState } from "@/components/ui/LoadingState";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { useOrders } from "@/lib/hooks/use-orders";
 
 const statusConfig: Record<string, { label: string; color: string; bg: string; icon: string }> = {
@@ -19,7 +21,7 @@ export default function OrdersScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState("all"); // all, active, past
-  const { data: orders = [], isLoading, refetch } = useOrders();
+  const { data: orders = [], isPending, isError, refetch } = useOrders();
 
   const filteredOrders = (orders as any[]).filter((order: any) => {
     if (filter === "all") return true;
@@ -27,6 +29,14 @@ export default function OrdersScreen() {
     if (filter === "past") return ["delivered", "cancelled"].includes(order.status);
     return true;
   });
+
+  if (isPending) {
+    return <LoadingState message="Loading your orders..." />;
+  }
+
+  if (isError) {
+    return <ErrorState message="Failed to load orders." onRetry={refetch} />;
+  }
 
   return (
     <View className="flex-1 bg-background">
@@ -70,7 +80,7 @@ export default function OrdersScreen() {
       {filteredOrders.length === 0 ? (
         <View className="flex-1 justify-center">
           <EmptyState
-            icon="package"
+            iconName="package"
             title="No orders found"
             description="You don't have any orders matching this filter."
             actionLabel="Start Shopping"
@@ -83,7 +93,7 @@ export default function OrdersScreen() {
           keyExtractor={item => item.id}
           contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor="#004CFF" />}
+          refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} tintColor="#004CFF" />}
           renderItem={({ item }) => {
             const status = statusConfig[item.status];
             

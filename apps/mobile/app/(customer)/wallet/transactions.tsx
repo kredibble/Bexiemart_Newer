@@ -98,7 +98,7 @@ export default function TransactionsScreen() {
       ) : filteredTransactions.length === 0 ? (
         <View className="flex-1 px-5 pt-8">
           <EmptyState
-            icon="file-text"
+            iconName="file-text"
             title="No transactions found"
             description={filter === 'ALL' ? "Your activity will appear here." : `You have no ${filter === 'IN' ? 'incoming' : 'outgoing'} transactions.`}
           />

@@ -5,15 +5,29 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useCart, useUpdateCartItem, useRemoveFromCart } from "@/lib/hooks/use-cart";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { LoadingState } from "@/components/ui/LoadingState";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { Image } from "expo-image";
 import { Icon } from "@/components/ui/Icon";
 import { useState } from "react";
 import Toast from "@/lib/toast-polyfill";
 
+interface CartItemData {
+  id: string;
+  productId: string;
+  vendorId: string;
+  vendorName: string;
+  price: number;
+  quantity: number;
+  stock: number;
+  imageUrl?: string;
+  name: string;
+}
+
 export default function CartScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { data: cartData, isLoading } = useCart();
+  const { data: cartData, isPending, isError, refetch } = useCart();
   const updateCartMutation = useUpdateCartItem();
   const removeFromCartMutation = useRemoveFromCart();
 
@@ -47,7 +61,7 @@ export default function CartScreen() {
   };
 
   const handleRemoveItem = (productId: string, name: string) => {
-    const cartItem = items.find((i: any) => i.productId === productId);
+    const cartItem = items.find((i: CartItemData) => i.productId === productId);
     Alert.alert("Remove Item", `Remove "${name}" from cart?`, [
       { text: "Cancel", style: "cancel" },
       { text: "Remove", style: "destructive", onPress: () => {
@@ -62,19 +76,32 @@ export default function CartScreen() {
     router.push("/(customer)/checkout");
   };
 
+  if (isPending) {
+    return <LoadingState message="Loading cart..." />;
+  }
+
+  if (isError) {
+    return <ErrorState message="Failed to load your cart." onRetry={refetch} />;
+  }
+
   if (items.length === 0) {
     return (
       <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
-        <EmptyState
-          icon="shopping-bag"
-          title="Your cart is empty"
-          description="Explore the marketplace and add items you love to your cart."
-          actionLabel="Browse Products"
+        <View className="px-6 pt-4 pb-2">
+          <Text className="text-[28px] font-heading font-black text-foreground tracking-tight">Cart</Text>
+        </View>
+        <EmptyState 
+          title="Your cart is empty" 
+          description="Looks like you haven't added anything to your cart yet." 
+          iconName="shopping-cart"
+          actionLabel="Start Shopping"
           onAction={() => router.push("/(customer)/(shop)")}
         />
       </View>
     );
   }
+
+  type GroupedVendor = { vendorId: string; vendor: string; items: CartItemData[] };
 
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
@@ -84,14 +111,14 @@ export default function CartScreen() {
       >
         {/* Dynamic Vendor Grouping */}
         {Object.values(
-          items.reduce((acc: any, item: any) => {
+          items.reduce((acc: Record<string, GroupedVendor>, item: CartItemData) => {
             if (!acc[item.vendorId]) {
               acc[item.vendorId] = { vendorId: item.vendorId, vendor: item.vendorName, items: [] };
             }
             acc[item.vendorId].items.push(item);
             return acc;
-          }, {})
-        ).map((group: any, gIdx: number) => (
+          }, {}) as Record<string, GroupedVendor>
+        ).map((group: GroupedVendor, gIdx: number) => (
           <View key={gIdx} className="mb-6">
             {/* Vendor Header */}
             <View className="flex-row items-center justify-between mb-3 px-1">
@@ -110,7 +137,7 @@ export default function CartScreen() {
             </View>
 
             {/* Items */}
-            {group.items.map((item: any, idx: number) => (
+            {group.items.map((item: CartItemData, idx: number) => (
               <Pressable style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
                 key={item.productId}
                 className="flex-row bg-card rounded-[24px] p-4 border border-border gap-3 mb-3 shadow-[0_4px_10px_rgba(0,0,0,0.02)]"

@@ -70,6 +70,7 @@ export class AuthController {
         });
       } catch (e) {
         console.error("Failed to create vendor profile:", e);
+        throw new InternalServerErrorException("Failed to complete vendor setup");
       }
     }
 

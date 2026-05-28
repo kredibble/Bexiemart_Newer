@@ -13,8 +13,8 @@ export class FoodController {
 
   @Get("restaurants")
   @ApiOperation({ summary: "List restaurants, optionally filtered by category" })
-  getRestaurants(@Query("category") category?: string) {
-    return this.foodService.getRestaurants(category);
+  getRestaurants(@Query("category") category?: string, @Query("page") page?: string, @Query("limit") limit?: string) {
+    return this.foodService.getRestaurants(category, Number(page) || 1, Number(limit) || 20);
   }
 
   @Get("restaurants/:id")
@@ -25,8 +25,8 @@ export class FoodController {
 
   @Get("items")
   @ApiOperation({ summary: "List food items, optionally filtered by category or search" })
-  getFoodItems(@Query("category") category?: string, @Query("search") search?: string) {
-    return this.foodService.getFoodItems(category, search);
+  getFoodItems(@Query("category") category?: string, @Query("search") search?: string, @Query("page") page?: string, @Query("limit") limit?: string) {
+    return this.foodService.getFoodItems(category, search, Number(page) || 1, Number(limit) || 20);
   }
 
   @Post("cart/add")
@@ -72,8 +72,8 @@ export class FoodController {
 
   @Get("orders")
   @ApiOperation({ summary: "List current user's orders" })
-  getOrders(@Req() req: any) {
-    return this.foodService.getOrders(req.user.id);
+  getOrders(@Req() req: any, @Query("page") page?: string, @Query("limit") limit?: string) {
+    return this.foodService.getOrders(req.user.id, Number(page) || 1, Number(limit) || 20);
   }
 
   @Get("orders/:id")

@@ -4,8 +4,11 @@ import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon, SearchBar } from "@/components/ui";
+import { LoadingState } from "@/components/ui/LoadingState";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { useProducts, useCategories } from "@/lib/hooks/use-products";
 import { useFavoritesStore } from "@/lib/stores/favorites-store";
+import { Product, Category } from "@/lib/stores/product-store";
 import { useRiderStore } from "@/lib/stores/rider-store";
 import { useCountdown } from "@/hooks/useCountdown";
 
@@ -49,8 +52,8 @@ export default function HomeScreen() {
     { id: "3", title: "New Fashion Drops", subtitle: "Shop latest trends", bgImage: "https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?q=80&w=800&auto=format&fit=crop" },
   ];
 
-  const { data: productsData, refetch: refetchProducts } = useProducts();
-  const { data: categoriesData, refetch: refetchCategories } = useCategories();
+  const { data: productsData, isPending: isProductsLoading, isError: isProductsError, refetch: refetchProducts } = useProducts();
+  const { data: categoriesData, isPending: isCategoriesLoading, isError: isCategoriesError, refetch: refetchCategories } = useCategories();
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -64,8 +67,8 @@ export default function HomeScreen() {
   const allProducts = productsData?.data ?? [];
   const categories = categoriesData ?? [];
   const topProducts = allProducts.slice(0, 5);
-  const newItems = allProducts.filter((p: any) => p.tags?.includes("New")).slice(0, 5);
-  const flashSale = allProducts.filter((p: any) => p.oldPrice > p.price).slice(0, 6);
+  const newItems = allProducts.filter((p: Product) => p.tags?.includes("New")).slice(0, 5);
+  const flashSale = allProducts.filter((p: Product) => p.oldPrice && p.oldPrice > p.price).slice(0, 6);
   const mostPopular = [...allProducts].sort((a, b) => b.rating - a.rating).slice(0, 6);
   const justForYou = allProducts.slice(10, 14);
 
@@ -78,9 +81,17 @@ export default function HomeScreen() {
     router.push(`/(customer)/(shop)?category=${encodeURIComponent(categoryName)}`);
   };
 
-  const handleViewableItemsChanged = useCallback(({ viewableItems }: any) => {
+  const handleViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: Array<{ index: number | null }> }) => {
     if (viewableItems.length > 0) setActiveHeroIndex(viewableItems[0].index ?? 0);
   }, []);
+
+  if (isProductsLoading || isCategoriesLoading) {
+    return <LoadingState message="Loading BexieMart..." />;
+  }
+
+  if (isProductsError || isCategoriesError) {
+    return <ErrorState message="Failed to load store data." onRetry={onRefresh} />;
+  }
 
   return (
     <View className="flex-1 bg-card">
@@ -252,7 +263,7 @@ export default function HomeScreen() {
             </Pressable>
           </View>
           <View className="flex-row flex-wrap justify-between gap-y-4">
-            {categories.slice(0, 6).map((cat: any) => (
+            {categories.slice(0, 6).map((cat: Category) => (
               <Pressable 
                 key={cat.id} 
                 className="w-[48%] active:opacity-70"
@@ -377,7 +388,7 @@ export default function HomeScreen() {
               </Pressable>
             </View>
             <View className="flex-row flex-wrap justify-between gap-y-4">
-              {flashSale.map((item: any) => {
+              {flashSale.map((item: Product) => {
                 const discount = Math.round((1 - item.price / item.oldPrice) * 100);
                 return (
                   <Pressable 
@@ -451,7 +462,7 @@ export default function HomeScreen() {
             </View>
           </View>
           <View className="flex-row flex-wrap justify-between gap-y-5">
-            {justForYou.map((item: any) => (
+            {justForYou.map((item: Product) => (
               <Pressable 
                 key={item.id} 
                 className="w-[48%] active:opacity-70"

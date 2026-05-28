@@ -2,7 +2,9 @@ import { create } from 'zustand';
 import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from './auth-store';
 
-const SOCKET_URL = (process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000').replace('/api', '/chat');
+import { ENV } from "../../config";
+
+const SOCKET_URL = ENV.SOCKET_URL;
 
 interface SocketState {
   socket: Socket | null;
